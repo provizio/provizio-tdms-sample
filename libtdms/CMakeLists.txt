@@ -1,0 +1,56 @@
+add_library(libtdms
+    src/libtdms/Channel.cpp
+    src/libtdms/LeadIn.cpp
+    src/libtdms/TDMSReader.cpp
+    src/libtdms/MetaData.cpp
+    src/libtdms/Object.cpp
+    src/libtdms/ObjectDefaults.cpp
+    src/libtdms/Error.cpp
+    src/libtdms/Root.cpp
+    src/libtdms/Group.cpp
+    src/libtdms/TDMSData.cpp
+    src/types/DataValue.cpp
+    src/types/DataTypeFactory.cpp
+    src/types/Int8.cpp
+    src/types/Int8Array.cpp
+    src/types/Int8Value.cpp
+    src/types/Int16.cpp
+    src/types/Int16Array.cpp
+    src/types/Int16Value.cpp
+    src/types/Int32.cpp
+    src/types/Int32Array.cpp
+    src/types/Int32Value.cpp
+    src/types/Int64.cpp
+    src/types/Int64Array.cpp
+    src/types/Int64Value.cpp
+    src/types/UInt8.cpp
+    src/types/UInt8Array.cpp
+    src/types/UInt8Value.cpp
+    src/types/UInt16.cpp
+    src/types/UInt16Array.cpp
+    src/types/UInt16Value.cpp
+    src/types/UInt32.cpp
+    src/types/UInt32Array.cpp
+    src/types/UInt32Value.cpp
+    src/types/UInt64.cpp
+    src/types/UInt64Array.cpp
+    src/types/UInt64Value.cpp
+    src/types/Float32.cpp
+    src/types/Float32Array.cpp
+    src/types/Float32Value.cpp
+    src/types/Float64.cpp
+    src/types/Float64Array.cpp
+    src/types/Float64Value.cpp
+    src/types/Float128.cpp
+    src/types/Float128Array.cpp
+    src/types/Float128Value.cpp
+    src/types/String.cpp
+    src/types/StringArray.cpp
+    src/types/StringValue.cpp
+    src/types/Bool.cpp
+    src/types/BoolArray.cpp
+    src/types/BoolValue.cpp
+)
+
+# Include directories
+target_include_directories(libtdms PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -1,0 +1,6 @@
+build/
+.vscode/
+.vsconfig
+.clang-format
+.clang-tidy
+*.dump
