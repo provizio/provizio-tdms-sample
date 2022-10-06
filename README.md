@@ -1,6 +1,6 @@
 # tdmsreader
 
-tdmsreader is an application that reads and parses files with NI TDMS format (.tdms).
+tdmsreader is an application that reads and parses files with [NI TDMS format](https://www.ni.com/en-ie/support/documentation/supplemental/06/the-ni-tdms-file-format.html).
 
 ## General
 
