@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
     std::string group_name = "/'RT3000 UDP'";
     std::string channel_name = "'Acceleration x [m/(s^2)]'";
 
-    double latitude = tdmsData.getDataFloat64(group_name, channel_name, index);
-    std::cout << "Acceleration x [m/(s^2)] [" << index << "]: " << latitude << std::endl;
+    double acceleration = tdmsData.getDataFloat64(group_name, channel_name, index);
+    std::cout << "Acceleration x [m/(s^2)] [" << index << "]: " << acceleration << std::endl;
 
     return 0;
 }
