@@ -11,6 +11,10 @@ with minimal modifications to fix bugs and add some functionalities.
 
 ### Build
 
+No particular dependencies are required apart from make, cmake and a gcc compiler. 
+However an `install_dependencies.sh` file has been included that can be run before building, to make sure that they 
+are all installed. 
+
 To build, run the following commands from the project root folder
 
 ```shell
@@ -37,6 +41,9 @@ There is the possibility to use two options:
 
 ### Notes
 
-This is a basic version that parses a tdms file and extract the structure. 
+* This is a basic version that parses a tdms file and extract the structure. 
 To read individual values, a sample method `TDMSData::getDataFloat64` has been created which can be replicated, 
 with the appropriate modifications, to extract values of different data types.
+
+* The `CMakeLists.txt` file requires version `3.10` because that is what I have installed on my machine at the moment,
+so it hasn't been tested with older versions.
