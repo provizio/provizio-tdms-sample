@@ -5,7 +5,7 @@
 
 void help()
 {
-	std::cout << "Use: readTDMS -option your_file_name.tdms" << std::endl;
+	std::cout << "Use: tdmsreader -option your_file_name.tdms" << std::endl;
 	std::cout << "Options:" << std::endl;
 	std::cout << "-h: print help information and exit" << std::endl;
 	std::cout << "-v: verbose output\n" << std::endl;
@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
 
     // Input arguments
     if ((argc < 2) or (argc > 3)){
-		std::cout << "Use: readTDMS (-h/-v) your_file_name.tdms" << std::endl;
+		std::cout << "Use: tdmsreader (-h/-v) your_file_name.tdms" << std::endl;
 		std::cout << "\nInput error: please provide a single valid *.tdms file name!\n" << std::endl;
 		return 0;
 	}
