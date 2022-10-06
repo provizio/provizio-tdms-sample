@@ -45,5 +45,13 @@ int main(int argc, char** argv) {
     tdmsData.print(std::cout);
     std::cout << std::endl;
 
+    // Example of retrieving value for Acceleration x at index 1
+    unsigned int index = 1;
+    std::string group_name = "/'RT3000 UDP'";
+    std::string channel_name = "'Acceleration x [m/(s^2)]'";
+
+    double latitude = tdmsData.getDataFloat64(group_name, channel_name, index);
+    std::cout << "Acceleration x [m/(s^2)] [" << index << "]: " << latitude << std::endl;
+
     return 0;
 }

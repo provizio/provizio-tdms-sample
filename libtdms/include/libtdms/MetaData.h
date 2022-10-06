@@ -12,7 +12,7 @@ public:
     typedef std::list<Object*> ObjectList;
     MetaData(std::ifstream &infile, ObjectDefaults* objectDefaults);
     void readObjectCount();
-    void readRawData();
+    void readRawData(const bool verbose);
     void print() const;
     const ObjectList& getObjectList() const;
 private:

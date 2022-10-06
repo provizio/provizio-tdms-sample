@@ -16,9 +16,9 @@ void Channel::print(std::ostream &os) const {
   os << std::endl;
 }
 
-void Channel::addRawData(const DataArray *data) {
-  ndata += data->getSize();
-  rawData.push_back(data);
+void Channel::addRawData(const DataArray *indata) {
+  ndata += indata->getSize();
+  rawData.push_back(indata);
 }
 
 const DataArray* Channel::getData() const {
@@ -48,4 +48,7 @@ unsigned int Channel::getDataCount() const {
     return ndata;
 }
 
+const DataType* Channel::getDataType() const {
+    return dataType;
+}
 

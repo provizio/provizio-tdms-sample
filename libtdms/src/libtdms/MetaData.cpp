@@ -16,10 +16,17 @@ void MetaData::readObjectCount() {
     infile.read((char*)&objectCount,4);
 }
 
-void MetaData::readRawData() {
+void MetaData::readRawData(const bool verbose) {
+    if (verbose){
+        std::cout << "\nRead raw data" << std::endl;
+    }
     for (ObjectList::iterator object = objects.begin();
             object != objects.end(); ++object) {
         if ((*object)->hasRawData()) {
+            if (verbose){
+                std::string path = (*object)->getPath();
+                std::cout << "\t" << path << std::endl;
+            }
             (*object)->readRawData();
         } else {
         }

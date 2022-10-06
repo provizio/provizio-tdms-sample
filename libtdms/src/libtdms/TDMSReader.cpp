@@ -38,13 +38,13 @@ void TDMSReader::read(const std::string &filename,
 
     // Find total file size
 	infile.seekg(0, std::ios::end);
-	d_file_size = infile.tellg();
+	file_size = infile.tellg();
 	infile.seekg(0, std::ios::beg);
 
     metaData = 0;
     atEnd = false;
 
-    while (infile.tellg() < (long long)d_file_size) {
+    while (infile.tellg() < (long long)file_size) {
         
         LeadIn *leadIn = 0;
         try {
@@ -65,10 +65,10 @@ void TDMSReader::read(const std::string &filename,
         long long nextSegmentOffset = leadIn->getNextSegmentOffset();
 
         if (nextSegmentOffset == -1)
-            nextSegmentOffset = d_file_size;
+            nextSegmentOffset = file_size;
 
-        atEnd = (nextSegmentOffset >= (long long)d_file_size);
-        long long nextOffset = (atEnd) ? d_file_size : nextSegmentOffset + (long long)infile.tellg();
+        atEnd = (nextSegmentOffset >= (long long)file_size);
+        long long nextOffset = (atEnd) ? file_size : nextSegmentOffset + (long long)infile.tellg();
         
         if (verbose){
             printf("POS after LeadIn: %llu\n", posAfterLeadIn);
@@ -84,12 +84,12 @@ void TDMSReader::read(const std::string &filename,
             if (leadIn->hasRawData()){
                 infile.seekg(posAfterLeadIn + offset, std::ios_base::beg);
                 if (verbose)
-                    printf("\tRaw data starts at POS: 0x%X\n", (unsigned int)infile.tellg());
+                    printf("Raw data starts at POS: %llu (0x%X)\n", (unsigned long long)infile.tellg(), (unsigned int)infile.tellg());
 
-                metaData->readRawData();
+                metaData->readRawData(verbose);
 
                 if (verbose)
-                    printf("\tPOS after metadata: 0x%X\n", (unsigned int)infile.tellg());
+                    printf("POS after raw data: %llu (0x%X)\n", (unsigned long long)infile.tellg(), (unsigned int)infile.tellg());
             }
 
         } else if (leadIn->hasRawData()) {
@@ -99,7 +99,7 @@ void TDMSReader::read(const std::string &filename,
 
             total_chunk_size = nextSegmentOffset - offset;
             infile.seekg(posAfterLeadIn + offset, std::ios_base::beg);
-            metaData->readRawData();
+            metaData->readRawData(verbose);
 
         } else if (verbose) {
             printf("\tSegment without metadata or raw data!\n");
@@ -110,7 +110,7 @@ void TDMSReader::read(const std::string &filename,
         if (atEnd)
             printf("Should skip to the end of file...File format error?!\n");
 
-        if (nextSegmentOffset >= d_file_size){
+        if (nextSegmentOffset >= file_size){
             if (verbose)
                 printf("\tEnd of file is reached after segment !\n");
             break;

@@ -1,5 +1,7 @@
 #include <iostream>
 #include <algorithm>
+#include <cstring>
+#include "types/DataArray.h"
 #include "libtdms/TDMSData.h"
 #include "libtdms/TDMSReader.h"
 #include "libtdms/MetaData.h"
@@ -74,4 +76,20 @@ const Root& TDMSData::getRoot() const {
     return root;
 }
 
-
+double TDMSData::getDataFloat64(const std::string &group_name, const std::string &channel_name, const unsigned int index) {
+    double value;
+    // find group
+    Group* group = root.getGroup(group_name);
+    // find channel
+    Channel* channel = group->getChannel(channel_name);
+    // get data from channel
+    const DataArray* data = channel->getData();
+    const DataType* dataType = channel->getDataType();
+    int nbytes = data->getSizeOf();
+    int nelements = data->getSize();
+    // extract data of specific type at input position "index"
+    char *ptr = (char*)data->getData();
+    ptr += nbytes*index;
+    std::memcpy(&value, ptr, nbytes);
+    return value;
+}

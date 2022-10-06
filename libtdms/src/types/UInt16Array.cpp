@@ -2,5 +2,5 @@
 
 UInt16Array::UInt16Array(const DataType* type, unsigned short* data,
   unsigned int size)
-  : DataArray(type, size, 2), data(data) {
+  : DataArray(type, size, 2, data), data(data) {
 }

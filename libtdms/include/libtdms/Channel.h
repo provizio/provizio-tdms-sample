@@ -13,9 +13,10 @@ public:
     const std::string& getName() const;
     void print(std::ostream &os) const;
     void setDataType(const DataType *type);
-    void addRawData(const DataArray *data);
+    void addRawData(const DataArray *indata);
     unsigned int getDataCount() const;
     const DataArray* getData() const;
+    const DataType* getDataType() const;
 private:
     const std::string name;
     RawDataSequence rawData;

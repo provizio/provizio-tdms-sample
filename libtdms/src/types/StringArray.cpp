@@ -2,5 +2,5 @@
 
 StringArray::StringArray(const DataType* type, char* data,
   unsigned int size, unsigned long int nbytes)
-  : DataArray(type, size, nbytes/size), data(data) {
+  : DataArray(type, size, nbytes/size, data), data(data) {
 }

@@ -14,7 +14,7 @@ public:
 private:
     ObjectDefaults* objectDefaults;
     MetaData* metaData;
-    unsigned long long d_file_size;
+    unsigned long long file_size;
     bool atEnd;
 };
 

@@ -2,5 +2,5 @@
 
 UInt64Array::UInt64Array(const DataType* type, unsigned long long* data,
   unsigned int size)
-  : DataArray(type, size, 8), data(data) {
+  : DataArray(type, size, 8, data), data(data) {
 }
