@@ -5,7 +5,9 @@ tdmsreader is an application that reads and parses files with [NI TDMS format](h
 ## General
 
 This application is based on the code from this repository [https://github.com/shumway/tdmsreader](https://github.com/shumway/tdmsreader),
-with minimal modifications to fix bugs and add some functionalities.
+with minimal modifications to fix bugs and add some functionalities. 
+The original repository is provided with an [MIT license](https://en.wikipedia.org/wiki/MIT_License) 
+and the [original license file](COPYING) is also included here for completeness.
 
 ## Instructions
 
