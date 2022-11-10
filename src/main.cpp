@@ -4,6 +4,8 @@
 
 #include "libtdms/TDMSData.h"
 
+#include "provizio/radar_api/core.h"
+
 void help()
 {
     std::cout << "Use: provizio-tdms-sample -option your_file_name.tdms" << std::endl;
@@ -22,7 +24,7 @@ int main(int argc, char **argv)
               << std::endl;
 
     // Input arguments
-    if ((argc < 2) or (argc > 3))
+    if (argc < 2 || argc > 3)
     {
         std::cout << "Use: provizio-tdms-sample (-h/-v) your_file_name.tdms" << std::endl;
         std::cout << "\nInput error: please provide a single valid *.tdms file name!\n"
@@ -36,28 +38,23 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    bool verbose = false;
-    if ((argc == 3) && (strcmp(argv[1], "-v") == 0))
-    {
-        verbose = true;
-    }
-
-    std::string fileName = (argc == 3) ? argv[2] : argv[1];
+    const bool verbose = (argc == 3 && strcmp(argv[1], "-v") == 0);
+    const std::string file_name = (argc == 3) ? argv[2] : argv[1];
 
     // Parse TDMS
-    TDMSData tdmsData(fileName, verbose);
+    TDMSData tdms_data(file_name, verbose);
 
     // Print final information
-    int nobject = tdmsData.getGroupCount();
-    tdmsData.print(std::cout);
+    int nobject = tdms_data.getGroupCount();
+    tdms_data.print(std::cout);
     std::cout << std::endl;
 
     // Example of retrieving value for Acceleration x at index 1
-    unsigned int index = 1;
+    const unsigned int index = 1;
     std::string group_name = "/'RT3000 UDP'";
     std::string channel_name = "'Acceleration x [m/(s^2)]'";
 
-    double acceleration = tdmsData.getDataFloat64(group_name, channel_name, index);
+    const double acceleration = tdms_data.getDataFloat64(group_name, channel_name, index);
     std::cout << "Acceleration x [m/(s^2)] [" << index << "]: " << acceleration << std::endl;
 
     return 0;
