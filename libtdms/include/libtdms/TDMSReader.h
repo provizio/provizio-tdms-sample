@@ -1,7 +1,10 @@
 #ifndef TDMS_READER_H
 #define TDMS_READER_H
 
-class ObjectDefaults;
+#include <memory>
+
+#include "ObjectDefaults.h"
+
 class MetaData;
 class TDMSData;
 
@@ -12,8 +15,8 @@ public:
     void checkSizeOfTypes();
     void read(const std::string &filename, TDMSData*, const bool verbose=true);
 private:
-    ObjectDefaults* objectDefaults;
-    MetaData* metaData;
+    std::shared_ptr<ObjectDefaults> objectDefaults;
+    std::shared_ptr<MetaData> metaData;
     unsigned long long file_size;
     bool atEnd;
 };

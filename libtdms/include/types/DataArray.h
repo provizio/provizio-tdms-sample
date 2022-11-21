@@ -1,25 +1,33 @@
-#ifndef DATA_ARRAY_H
-#define DATA_ARRAY_H
+#ifndef TYPES_DATAARRAY
+#define TYPES_DATAARRAY
 
-class DataType;
+#include <cstdint>
+#include <memory>
+#include <vector>
 
-class DataArray {
+#include "types/DataType.h"
+
+class DataArray
+{
 public:
   DataArray(const DataType *type, unsigned int size, int sizeOf)
-    : type(type), size(size), sizeOf(sizeOf) {
+      : type(type), size(size), sizeOf(sizeOf)
+  {
   }
-  DataArray(const DataType *type, unsigned int size, int sizeOf, void *data)
-    : type(type), size(size), sizeOf(sizeOf), data(data) {
+  DataArray(const DataType *type, unsigned int size, int sizeOf, std::shared_ptr<std::vector<std::uint8_t>> data)
+      : type(type), size(size), sizeOf(sizeOf), data(data)
+  {
   }
   virtual ~DataArray() {}
-  unsigned int getSize() const {return size;}
-  int getSizeOf() const {return sizeOf;}
-  void* getData() const {return data;} 
+  unsigned int getSize() const { return size; }
+  int getSizeOf() const { return sizeOf; }
+  std::shared_ptr<std::vector<std::uint8_t>> getData() const { return data; }
+
 private:
   const DataType *type;
   unsigned int size;
   int sizeOf;
-  void* data;
+  std::shared_ptr<std::vector<std::uint8_t>> data;
 };
 
-#endif
+#endif // TYPES_DATAARRAY

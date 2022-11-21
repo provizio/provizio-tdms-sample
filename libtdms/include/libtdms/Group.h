@@ -1,26 +1,29 @@
-#ifndef GROUP_H
-#define GROUP_H
+#ifndef LIBTDMS_GROUP
+#define LIBTDMS_GROUP
 
+#include <memory>
 #include <string>
 #include <vector>
-class Channel;
 
-class Group {
+#include "Channel.h"
+
+class Group
+{
 public:
-    typedef std::vector<Channel*> ChannelSet;
+    typedef std::vector<std::shared_ptr<Channel>> ChannelSet;
 
-    Group(const std::string& name);
-    void addChannel(Channel* channel);
+    Group(const std::string &name);
+    void addChannel(std::shared_ptr<Channel> channel);
 
-    const std::string& getName() const;
+    const std::string &getName() const;
     int getGroupCount() const;
-    const ChannelSet& getChannels() const;
-    Channel* getChannel(const std::string &name);
-    const Channel* getChannel(const std::string &name) const;
+    const ChannelSet &getChannels() const;
+    std::shared_ptr<Channel> getChannel(const std::string &name);
+    const std::shared_ptr<Channel> getChannel(const std::string &name) const;
     void print(std::ostream &os) const;
 
 private:
     const std::string name;
     ChannelSet channels;
 };
-#endif
+#endif // LIBTDMS_GROUP

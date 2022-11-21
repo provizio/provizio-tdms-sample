@@ -4,28 +4,36 @@
 #include <string>
 #include <fstream>
 #include <map>
+
+#include "types/DataType.h"
+
 class ObjectDefaults;
-class DataType;
 class DataValue;
 class DataArray;
 
-class Object {
+class Object
+{
     friend class ObjectDefaults;
+
 public:
-    typedef std::pair<std::string, const DataValue*> Property;
-    Object(std::ifstream &infile, ObjectDefaults *objectDefaults);
+    typedef std::pair<std::string, std::shared_ptr<DataValue>> Property;
+
+    static std::shared_ptr<Object> makeObject(std::ifstream &infile, std::shared_ptr<ObjectDefaults> objectDefaults);
+
     Property readProperty();
     void readPath();
     void readRawDataInfo();
     void readPropertyCount();
     void readRawData();
     bool hasRawData() const;
-    const std::string& getPath() const;
-    const DataType* getDataType() const;
-    const DataArray* getRawData() const;
+    const std::string &getPath() const;
+    const DataType *getDataType() const;
+    std::shared_ptr<DataArray> getRawData() const;
+
 private:
+    Object(std::ifstream &infile);
+
     std::ifstream &infile;
-    ObjectDefaults *objectDefaults;
     std::string path;
     std::map<std::string, std::string> properties;
     unsigned int rawDataIndex;
@@ -35,7 +43,7 @@ private:
     int dimension;
     long long nvalue;
     long long nbytes;
-    DataArray* rawData;
+    std::shared_ptr<DataArray> rawData;
 };
 
 #endif

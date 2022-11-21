@@ -3,21 +3,24 @@
 
 #include <fstream>
 #include <list>
+#include <memory>
 
-class ObjectDefaults;
-class Object;
+#include "ObjectDefaults.h"
+#include "Object.h"
 
-class MetaData {
+class MetaData
+{
 public:
-    typedef std::list<Object*> ObjectList;
-    MetaData(std::ifstream &infile, ObjectDefaults* objectDefaults);
+    typedef std::list<std::shared_ptr<Object>> ObjectList;
+    MetaData(std::ifstream &infile, std::shared_ptr<ObjectDefaults> objectDefaults);
     void readObjectCount();
     void readRawData(const bool verbose);
     void print() const;
-    const ObjectList& getObjectList() const;
+    const ObjectList &getObjectList() const;
+
 private:
-    std::ifstream& infile;
-    ObjectDefaults *objectDefaults;
+    std::ifstream &infile;
+    std::shared_ptr<ObjectDefaults> objectDefaults;
     unsigned int objectCount;
     ObjectList objects;
 };

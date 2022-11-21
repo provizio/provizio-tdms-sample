@@ -1,15 +1,17 @@
-#ifndef TDMS_H
-#define TDMS_H
+#ifndef LIBTDMS_OBJECTDEFAULTS
+#define LIBTDMS_OBJECTDEFAULTS
 
 #include <map>
+#include <memory>
 
-class Object;
+#include "Object.h"
 
 class ObjectDefaults {
 public:
-    void initializeObject(Object* obj);
+    void initializeObject(std::shared_ptr<Object> obj);
+
 private:
-    std::map<std::string, const Object*> objects;
+    std::map<std::string, std::shared_ptr<Object>> objects;
 };
 
-#endif
+#endif // LIBTDMS_OBJECTDEFAULTS

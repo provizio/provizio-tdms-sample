@@ -5,7 +5,7 @@
 
 class Int16Array : public DataArray {
 public:
-  Int16Array(const DataType* type, short* data, unsigned int size);
+  Int16Array(const DataType *type, std::shared_ptr<std::vector<std::uint8_t>> data, unsigned int size);
 };
 
 #endif

@@ -1,9 +1,9 @@
 #ifndef DATA_TYPE_FACTORY_H
 #define DATA_TYPE_FACTORY_H
 
-class DataType;
 #include <map>
 
+#include "types/DataType.h"
 
 class DataTypeFactory {
 public:
@@ -22,7 +22,7 @@ public:
   static const int STRING;
   static const int BOOL;
 private:
-  static std::map<int, const DataType*> singletonObjects;
+  static std::map<int, std::shared_ptr<DataType>> singletonObjects;
 };
 
 #endif

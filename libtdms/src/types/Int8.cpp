@@ -3,21 +3,25 @@
 #include "types/Int8Array.h"
 #include <fstream>
 
+static_assert(sizeof(char) == 1, "Unexpected sizeof(char)");
 
-DataValue* Int8::readValue(std::ifstream &infile) const {
+std::shared_ptr<DataValue> Int8::readValue(std::ifstream &infile) const
+{
   char data;
   infile.read(&data, 1);
-  return new Int8Value(this,data);
+  return std::make_shared<Int8Value>(this, data);
 }
 
-DataArray* Int8::readArray(std::ifstream &infile, unsigned int size,
-    unsigned int nbytes) const {
-  char* data = new char[size];
-  infile.read(data, size);
-  return new Int8Array(this, data, size);
+std::shared_ptr<DataArray> Int8::readArray(std::ifstream &infile, unsigned int size,
+                                           unsigned int nbytes) const
+{
+  auto data = std::make_shared<std::vector<std::uint8_t>>(size);
+  infile.read((char*)data->data(), size);
+  return std::make_shared<Int8Array>(this, data, size);
 }
 
-DataArray* Int8::newArray(unsigned int size, unsigned int nbytes) const {
-  char* data = new char[size];
-  return new Int8Array(this, data, size);
+std::shared_ptr<DataArray> Int8::newArray(unsigned int size, unsigned int nbytes) const
+{
+  auto data = std::make_shared<std::vector<std::uint8_t>>(size);
+  return std::make_shared<Int8Array>(this, data, size);
 }

@@ -5,10 +5,8 @@
 
 class StringArray : public DataArray {
 public:
-  StringArray(const DataType* type, char* data, unsigned int size,
+  StringArray(const DataType* type, std::shared_ptr<std::vector<std::uint8_t>> data, unsigned int size,
     unsigned long int nbytes);
-  char* data;
-  unsigned long int nbytes;
 };
 
 #endif

@@ -5,8 +5,7 @@
 
 class Int32Array : public DataArray {
 public:
-  Int32Array(const DataType* type, int* data, unsigned int size);
-  int* data;
+  Int32Array(const DataType *type, std::shared_ptr<std::vector<std::uint8_t>> data, unsigned int size);
 };
 
 #endif
