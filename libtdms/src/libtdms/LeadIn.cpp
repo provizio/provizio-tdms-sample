@@ -6,6 +6,17 @@
 #include "libtdms/LeadIn.h"
 #include "libtdms/Error.h"
 
+bool isHostBigEndian()
+{
+    union
+    {
+        uint32_t i;
+        char c[4];
+    } bint = {0x01020304};
+
+    return bint.c[0] == 1;
+}
+
 LeadIn::LeadIn(std::ifstream &infile) : infile(infile) {
     checkTDMSString();
     parseTOCMask();
@@ -37,6 +48,11 @@ void LeadIn::parseTOCMask() {
     flagIsInterleaved = ((tocMask &  32) != 0);
     flagIsBigEndian   = ((tocMask &  64) != 0);
     flagHasDAQmxData  = ((tocMask & 128) != 0);
+
+    if (isHostBigEndian() != flagIsBigEndian)
+    {
+        throw Error("libtdms doesn't support foreign endians");
+    }
 }
 
 void LeadIn::readVersionNumber() {

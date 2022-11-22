@@ -9,16 +9,12 @@
 #include "libtdms/Channel.h"
 #include "libtdms/Root.h"
 #include "libtdms/Group.h"
+#include "libtdms/Error.h"
 
-TDMSData::TDMSData(const std::string &filename, bool verbose)
-    : filename(filename)
+void TDMSData::read(const std::string &filename, bool verbose)
 {
     TDMSReader tdmsReader;
     tdmsReader.read(filename, this, verbose);
-}
-
-TDMSData::~TDMSData()
-{
 }
 
 void TDMSData::storeObjects(std::shared_ptr<MetaData> metaData)
@@ -48,17 +44,19 @@ void TDMSData::storeObjects(std::shared_ptr<MetaData> metaData)
                 std::string channelName = pathName.substr(islash + 1);
                 std::string groupName = pathName.substr(0, islash);
                 auto group = root.getGroup(groupName);
+                if (!group)
+                {
+                    throw Error("Group not found: " + groupName);
+                }
+
                 auto channel = group->getChannel(channelName);
                 if (channel == 0)
                 {
                     channel = std::make_shared<Channel>(channelName);
                     group->addChannel(channel);
                 }
-                if ((*obj)->hasRawData())
-                {
-                    channel->setDataType((*obj)->getDataType());
-                    channel->addRawData((*obj)->getRawData());
-                }
+
+                addObject(group, channel, *obj);
             }
         }
     }
@@ -93,4 +91,13 @@ int TDMSData::getGroupCount() const
 const Root &TDMSData::getRoot() const
 {
     return root;
+}
+
+void TDMSData::addObject(std::shared_ptr<Group> group, std::shared_ptr<Channel> channel, std::shared_ptr<Object> object)
+{
+    if (object->hasRawData())
+    {
+        channel->setDataType(object->getDataType());
+        channel->addRawData(object->getRawData());
+    }
 }
