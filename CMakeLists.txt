@@ -27,7 +27,7 @@ set(PROVIZIO_RADAR_CORE_API_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/provizio_rad
 set(PROVIZIO_RADAR_CORE_API_SOURCE_DIR "${CMAKE_CURRENT_BINARY_DIR}/provizio_radar_api_core")
 set(PROVIZIO_RADAR_CORE_API_PREFIX "${CMAKE_CURRENT_BINARY_DIR}")
 set(PROVIZIO_RADAR_CORE_API_GITHUB_PROJECT "provizio/provizio_radar_api_core") # Or your own fork
-set(PROVIZIO_RADAR_CORE_API_GITHUB_BRANCH "master") # Or a specific tag you'd like to use
+set(PROVIZIO_RADAR_CORE_API_GITHUB_BRANCH "v22.11.17") # Or a specific tag you'd like to use
 set(PROVIZIO_RADAR_CORE_API_INSTALL_DIR "${PROVIZIO_RADAR_CORE_API_BINARY_DIR}/install")
 ExternalProject_Add(libprovizio_radar_api_core
 GIT_REPOSITORY "https://github.com/${PROVIZIO_RADAR_CORE_API_GITHUB_PROJECT}.git" # or "git@github.com:${PROVIZIO_RADAR_CORE_API_GITHUB_PROJECT}.git" for ssh access, or your custom repo
@@ -40,7 +40,7 @@ CMAKE_ARGS "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" "-DCMAKE_INSTALL_PREFIX=${PR
 
 # Create target executable
 add_executable(provizio-tdms-sample src/main.cpp)
-target_include_directories(provizio-tdms-sample PUBLIC ${PROJECT_BINARY_DIR})
+target_include_directories(provizio-tdms-sample PUBLIC ${PROJECT_BINARY_DIR} include)
 target_link_libraries(provizio-tdms-sample PUBLIC libtdms)
 
 add_dependencies(provizio-tdms-sample libprovizio_radar_api_core)

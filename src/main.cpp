@@ -1,10 +1,13 @@
 #include <iostream>
+#include <limits>
+
+#include <assert.h>
 #include <string.h>
 #include <config.h>
 
 #include "libtdms/TDMSData.h"
-
 #include "provizio/radar_api/core.h"
+#include "WGS84toCartesian.hpp"
 
 void help()
 {
@@ -18,22 +21,187 @@ void help()
 class ProvizioTDMSData : public TDMSData
 {
 public:
-    ProvizioTDMSData(const std::string &oxtsGroupName, const std::string &provizioGroupName)
-        : oxtsGroupName(oxtsGroupName), provizioGroupName(provizioGroupName)
-    {
-    }
+    ProvizioTDMSData(const std::string &oxtsGroupName, const std::string &provizioGroupName, std::size_t maxAccumulationFrames, std::ostream &pointclouds_csv_stream, std::ostream &accumulated_pointclouds_csv_stream);
 
 protected:
     void addObject(std::shared_ptr<Group> group, std::shared_ptr<Channel> channel, std::shared_ptr<Object> object) override;
 
 private:
+    void addOxtsObject(std::shared_ptr<Channel> channel, std::shared_ptr<Object> object);
+    void addProvizioObject(std::shared_ptr<Channel> channel, std::shared_ptr<Object> object);
+    static void pointCloudCallback(const provizio_radar_point_cloud *point_cloud,
+                                   struct provizio_radar_point_cloud_api_context *context);
+    static void csvHeaderToStream(std::ostream &stream);
+    static void pointCloudToStream(std::ostream &stream, const provizio_radar_point_cloud &point_cloud, std::uint32_t frame_index, std::uint64_t timestamp);
+
     const std::string oxtsGroupName;
     const std::string provizioGroupName;
+
+    std::ostream &pointclouds_csv_stream;
+    std::ostream &accumulated_pointclouds_csv_stream;
+
+    std::unique_ptr<provizio_radar_point_cloud_api_context> point_cloud_api_context;
+    std::unique_ptr<provizio_radar_point_cloud> transformed_point_cloud;
+    std::vector<provizio_accumulated_radar_point_cloud> accumulation_buffer;
+
+    static constexpr auto nan = std::numeric_limits<double>::quiet_NaN();
+
+    double refLat = nan;
+    double refLon = nan;
+    double lat = nan;
+    double lon = nan;
+    double alt = nan;
+    double yaw = nan;
+    double pitch = nan;
+    double roll = nan;
+    provizio_enu_fix latestFix = {{nan, nan, nan, nan}, {nan, nan, nan}};
 };
+
+ProvizioTDMSData::ProvizioTDMSData(const std::string &oxtsGroupName, const std::string &provizioGroupName, std::size_t maxAccumulationFrames, std::ostream &pointclouds_csv_stream, std::ostream &accumulated_pointclouds_csv_stream)
+    : oxtsGroupName(oxtsGroupName),
+      provizioGroupName(provizioGroupName),
+      pointclouds_csv_stream(pointclouds_csv_stream),
+      accumulated_pointclouds_csv_stream(accumulated_pointclouds_csv_stream),
+      point_cloud_api_context(std::make_unique<provizio_radar_point_cloud_api_context>()),
+      transformed_point_cloud(std::make_unique<provizio_radar_point_cloud>()),
+      accumulation_buffer(maxAccumulationFrames)
+{
+    provizio_radar_point_cloud_api_context_init(&pointCloudCallback, this, point_cloud_api_context.get());
+    provizio_accumulated_radar_point_clouds_init(accumulation_buffer.data(), accumulation_buffer.size());
+
+    csvHeaderToStream(pointclouds_csv_stream);
+    csvHeaderToStream(accumulated_pointclouds_csv_stream);
+}
 
 void ProvizioTDMSData::addObject(std::shared_ptr<Group> group, std::shared_ptr<Channel> channel, std::shared_ptr<Object> object)
 {
-    std::cout << "addObject. Group: " << group->getName() << ". Channel: " << channel->getName() << ". Data size: " << object->getRawData()->getData()->size() << std::endl;
+    if (group->getName() == oxtsGroupName)
+    {
+        addOxtsObject(channel, object);
+    }
+    else if (group->getName() == provizioGroupName)
+    {
+        addProvizioObject(channel, object);
+    }
+}
+
+void ProvizioTDMSData::addOxtsObject(std::shared_ptr<Channel> channel, std::shared_ptr<Object> object)
+{
+    auto getDouble = [&]() -> double
+    {
+        assert(object->hasRawData());
+        assert(object->getRawData()->getData()->size() == sizeof(double));
+        double result;
+        memcpy(&result, object->getRawData()->getData()->data(), object->getRawData()->getData()->size());
+        return result;
+    };
+
+    bool updateLatestFix = true;
+    if (channel->getName() == "'Latitude [radians]'")
+    {
+        lat = getDouble() * 180.0 / M_PI;
+        if (std::isnan(refLat))
+        {
+            refLat = lat;
+        }
+    }
+    else if (channel->getName() == "'Longtitude [radians]'") // yep, LongTitude - due to a typo in tdms contents
+    {
+        lon = getDouble() * 180.0 / M_PI;
+        if (std::isnan(refLon))
+        {
+            refLon = lon;
+        }
+    }
+    else if (channel->getName() == "'Altitude [m]'")
+    {
+        alt = getDouble();
+    }
+    else if (channel->getName() == "'Heading [radians]'")
+    {
+        yaw = getDouble();
+    }
+    else if (channel->getName() == "'Pitch [radians]'")
+    {
+        pitch = getDouble();
+    }
+    else if (channel->getName() == "'Roll [radians]'")
+    {
+        roll = getDouble();
+    }
+    else
+    {
+        updateLatestFix = false;
+    }
+
+    if (updateLatestFix && !std::isnan(lat) && !std::isnan(lon) && !std::isnan(alt) && !std::isnan(yaw) && !std::isnan(pitch) && !std::isnan(roll))
+    {
+        const auto en = wgs84::toCartesian({refLat, refLon}, {lat, lon});
+        latestFix.position.east_meters = en[0];
+        latestFix.position.north_meters = en[1];
+        latestFix.position.up_meters = alt;
+        provizio_quaternion_set_euler_angles(roll, pitch, yaw, &latestFix.orientation);
+
+        // So next time we update latestFix when all 6 values are received again
+        lat = lon = alt = yaw = pitch = roll = nan;
+    }
+}
+
+void ProvizioTDMSData::addProvizioObject(std::shared_ptr<Channel> channel, std::shared_ptr<Object> object)
+{
+    if (object->hasRawData())
+    {
+        const auto errorCode = provizio_handle_possible_radar_point_cloud_packet(
+            point_cloud_api_context.get(),
+            object->getRawData()->getData()->data(),
+            object->getRawData()->getData()->size());
+
+        if (errorCode != 0 && errorCode != PROVIZIO_E_SKIPPED)
+        {
+            std::cerr << "provizio_handle_possible_radar_point_cloud_packet failed with error code = " << errorCode;
+        }
+    }
+}
+
+void ProvizioTDMSData::pointCloudCallback(const provizio_radar_point_cloud *point_cloud,
+                                          struct provizio_radar_point_cloud_api_context *context)
+{
+    const auto data = static_cast<ProvizioTDMSData *>(context->user_data);
+    pointCloudToStream(data->pointclouds_csv_stream, *point_cloud, point_cloud->frame_index, point_cloud->timestamp);
+
+    if (!std::isnan(data->latestFix.position.east_meters))
+    {
+        // There is a valid fix. Let's accumulate!
+        for (auto iterator = provizio_accumulate_radar_point_cloud_static(point_cloud, &data->latestFix, data->accumulation_buffer.data(), data->accumulation_buffer.size());
+             !provizio_accumulated_radar_point_cloud_iterator_is_end(&iterator, data->accumulation_buffer.data(), data->accumulation_buffer.size());
+             provizio_accumulated_radar_point_cloud_iterator_next_point_cloud(&iterator, data->accumulation_buffer.data(), data->accumulation_buffer.size()))
+        {
+            provizio_accumulated_radar_point_cloud_iterator_get_point_cloud(&iterator, &data->latestFix, data->accumulation_buffer.data(), data->accumulation_buffer.size(), data->transformed_point_cloud.get(), nullptr);
+            pointCloudToStream(data->accumulated_pointclouds_csv_stream, *data->transformed_point_cloud, point_cloud->frame_index, point_cloud->timestamp);
+        }
+    }
+}
+
+void ProvizioTDMSData::csvHeaderToStream(std::ostream &stream)
+{
+    stream << "Frame,Timestamp (ns),Velocity (m/s),Ground Velocity (m/s),X Position (m),Y Position (m),Z Position (m),SNR (dB)\n";
+}
+
+void ProvizioTDMSData::pointCloudToStream(std::ostream &stream, const provizio_radar_point_cloud &point_cloud, std::uint32_t frame_index, std::uint64_t timestamp)
+{
+    for (std::size_t i = 0; i < point_cloud.num_points_received; ++i)
+    {
+        const auto &point = point_cloud.radar_points[i];
+        stream
+            << frame_index << ","
+            << timestamp << ","
+            << point.radar_relative_radial_velocity_m_s << ","
+            << point.ground_relative_radial_velocity_m_s << ","
+            << point.x_meters << ","
+            << point.y_meters << ","
+            << point.z_meters << ","
+            << point.signal_to_noise_ratio << "\n";
+    }
 }
 
 int main(int argc, char **argv)
@@ -62,8 +230,12 @@ int main(int argc, char **argv)
     const bool verbose = (argc == 3 && strcmp(argv[1], "-v") == 0);
     const std::string file_name = (argc == 3) ? argv[2] : argv[1];
 
+    std::fstream pointclouds_csv_stream{file_name + ".pointclouds.csv", std::ios_base::out};
+    std::fstream accumulated_pointclouds_csv_stream{file_name + ".accumulated_pointclouds.csv", std::ios_base::out};
+
     // Parse TDMS
-    ProvizioTDMSData tdms_data("/'RT3000 UDP'", "/Provizio");
+    const std::size_t maxAccumulationFrames = 100;
+    ProvizioTDMSData tdms_data("/'RT3000 UDP'", "/'Provizio'", maxAccumulationFrames, pointclouds_csv_stream, accumulated_pointclouds_csv_stream);
     tdms_data.read(file_name, verbose);
 
     return 0;
