@@ -1,8 +1,8 @@
-#ifndef META_DATA_H
-#define META_DATA_H
+#ifndef LIBTDMS_METADATA
+#define LIBTDMS_METADATA
 
 #include <fstream>
-#include <list>
+#include <vector>
 #include <memory>
 
 #include "ObjectDefaults.h"
@@ -11,7 +11,7 @@
 class MetaData
 {
 public:
-    typedef std::list<std::shared_ptr<Object>> ObjectList;
+    typedef std::vector<std::shared_ptr<Object>> ObjectList;
     MetaData(std::ifstream &infile, std::shared_ptr<ObjectDefaults> objectDefaults);
     void readObjectCount();
     void readRawData(const bool verbose);
@@ -25,4 +25,4 @@ private:
     ObjectList objects;
 };
 
-#endif
+#endif // LIBTDMS_METADATA

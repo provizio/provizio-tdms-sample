@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "libtdms/Error.h"
 #include "libtdms/Object.h"
 #include "libtdms/ObjectDefaults.h"
 #include "types/DataType.h"
@@ -24,7 +25,7 @@ std::shared_ptr<Object> Object::makeObject(std::ifstream &infile, std::shared_pt
 }
 
 Object::Object(std::ifstream &infile)
-    : infile(infile), rawData(0)
+    : infile(infile)
 {
     readPath();
 }
@@ -51,19 +52,30 @@ void Object::readPath()
 
 void Object::readRawDataInfo()
 {
+    unsigned int rawDataIndex;
+    const auto startPos = infile.tellg();
     infile.read((char *)&rawDataIndex, 4);
     flagHasRawData = (rawDataIndex != 4294967295);
     if (flagHasRawData && rawDataIndex > 0)
     {
         unsigned int itype;
         infile.read((char *)&itype, 4);
-        dataType = DataTypeFactory::instanceFromIndex(itype);
-        infile.read((char *)&dimension, 4);
-        infile.read((char *)&nvalue, 8);
-        if (itype == 32)
+        if (itype != 0xffffffff)
         {
-            infile.read((char *)&nbytes, 8);
+            dataType = DataTypeFactory::instanceFromIndex(itype);
+            infile.read((char *)&dimension, 4);
+            infile.read((char *)&nvalue, 8);
+            if (rawDataIndex >= 28)
+            {
+                infile.read((char *)&nbytes, 8);
+            }
         }
+        else
+        {
+            throw Error("DAQmx raw data is not supported by this parser");
+        }
+
+        infile.seekg(startPos + (std::streamoff)rawDataIndex, std::ios_base::beg);
     }
 }
 

@@ -19,8 +19,7 @@ void ObjectDefaults::initializeObject(std::shared_ptr<Object> obj)
             obj->nbytes = old->nbytes;
         }
     }
-    else
-    {
-        objects[path] = obj;
-    }
+    
+    // The object gets replaced every time, as following objects may use "same as in the previous" semantics
+    objects[path] = obj;
 }

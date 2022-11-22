@@ -8,6 +8,8 @@ MetaData::MetaData(std::ifstream &infile, std::shared_ptr<ObjectDefaults> object
     : infile(infile), objectDefaults(objectDefaults), objectCount()
 {
     readObjectCount();
+    
+    objects.reserve(objectCount);
     for (unsigned int i = 0; i < objectCount; ++i)
     {
         objects.push_back(Object::makeObject(infile, objectDefaults));
@@ -36,9 +38,6 @@ void MetaData::readRawData(const bool verbose)
                 std::cout << "\t" << path << std::endl;
             }
             (*object)->readRawData();
-        }
-        else
-        {
         }
     }
 }

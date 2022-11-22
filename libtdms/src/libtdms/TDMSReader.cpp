@@ -8,28 +8,15 @@
 #include "libtdms/Error.h"
 #include "libtdms/TDMSData.h"
 
-TDMSReader::TDMSReader()
-{
-}
-
-void TDMSReader::checkSizeOfTypes()
-{
-    std::cout << "\nsize of char should be 1: " << sizeof(char) << std::endl;
-    std::cout << "size of short should be 2: " << sizeof(short) << std::endl;
-    std::cout << "size of int should be 4: " << sizeof(int) << std::endl;
-    std::cout << "size of long should be 4: " << sizeof(long) << std::endl;
-    std::cout << "size of long long should be 8: " << sizeof(long long)
-              << std::endl;
-    std::cout << "size of float should be 4: " << sizeof(float) << std::endl;
-    std::cout << "size of double should be 8: " << sizeof(double) << std::endl;
-    std::cout << "size of long double should be 16: " << sizeof(long double)
-              << std::endl;
-    std::cout << "size of bool should be 1: " << sizeof(bool) << std::endl;
-}
-
-TDMSReader::~TDMSReader()
-{
-}
+// Only these sizes are supported by libtdms
+static_assert(sizeof(char) == 1, "sizeof(char) == 1 expected");
+static_assert(sizeof(short) == 2, "sizeof(short) == 2 expected");
+static_assert(sizeof(int) == 4, "sizeof(int) == 4 expected");
+static_assert(sizeof(long long) == 8, "sizeof(long long) == 8 expected");
+static_assert(sizeof(float) == 4, "sizeof(float) == 4 expected");
+static_assert(sizeof(double) == 8, "sizeof(double) == 8 expected");
+static_assert(sizeof(long double) == 16, "sizeof(long double) == 16 expected");
+static_assert(sizeof(bool) == 1, "sizeof(bool) == 1 expected");
 
 void TDMSReader::read(const std::string &filename,
                       TDMSData *data, const bool verbose)
@@ -39,70 +26,86 @@ void TDMSReader::read(const std::string &filename,
 
     // Find total file size
     infile.seekg(0, std::ios::end);
-    file_size = infile.tellg();
+    const auto file_size = infile.tellg();
     infile.seekg(0, std::ios::beg);
 
     metaData = 0;
-    atEnd = false;
 
-    while (infile.tellg() < (long long)file_size)
+    while (!infile.eof())
     {
-       try
+        try
         {
             LeadIn leadIn(infile);
 
             if (infile.eof())
+            {
                 break;
+            }
 
             if ((verbose))
             {
                 leadIn.print();
             }
 
-            unsigned long long posAfterLeadIn = (unsigned long long)infile.tellg();
-            long long nextSegmentOffset = leadIn.getNextSegmentOffset();
+            const auto posAfterLeadIn = infile.tellg();
+            std::streampos nextSegmentPos;
 
-            if (nextSegmentOffset == -1)
-                nextSegmentOffset = file_size;
+            if (leadIn.getNextSegmentOffset() == -1)
+            {
+                nextSegmentPos = file_size;
+            }
+            else
+            {
+                nextSegmentPos = posAfterLeadIn + (std::streamoff)leadIn.getNextSegmentOffset();
+            }
 
-            atEnd = (nextSegmentOffset >= (long long)file_size);
-            long long nextOffset = (atEnd) ? file_size : nextSegmentOffset + (long long)infile.tellg();
+            const auto dataPos = posAfterLeadIn + (std::streamoff)leadIn.getDataOffset();
 
             if (verbose)
             {
-                printf("POS after LeadIn: %llu\n", posAfterLeadIn);
-                printf("Next Offset: %llu (0x%X)\n", (unsigned long long)nextOffset, (unsigned int)nextOffset);
+                printf("POS after LeadIn: %llu\n", (unsigned long long)posAfterLeadIn);
+                printf("Data POS: %llu\n", (unsigned long long)dataPos);
+                printf("Next Segment POS: %llu\n", (unsigned long long)nextSegmentPos);
             }
-
-            unsigned long long offset = leadIn.getDataOffset(), total_chunk_size = 0;
 
             if (leadIn.hasMetaData())
             {
                 metaData = std::make_shared<MetaData>(infile, objectDefaults);
                 if (verbose)
+                {
                     metaData->print();
+                }
 
                 if (leadIn.hasRawData())
                 {
-                    infile.seekg(posAfterLeadIn + offset, std::ios_base::beg);
+                    infile.seekg(dataPos, std::ios_base::beg);
                     if (verbose)
-                        printf("Raw data starts at POS: %llu (0x%X)\n", (unsigned long long)infile.tellg(), (unsigned int)infile.tellg());
+                    {
+                        printf("Raw data starts at POS: %llu\n", (unsigned long long)infile.tellg());
+                    }
 
                     metaData->readRawData(verbose);
 
                     if (verbose)
-                        printf("POS after raw data: %llu (0x%X)\n", (unsigned long long)infile.tellg(), (unsigned int)infile.tellg());
+                    {
+                        printf("POS after raw data: %llu\n", (unsigned long long)infile.tellg());
+                    }
                 }
             }
             else if (leadIn.hasRawData())
             {
+                if (verbose)
+                {
+                    printf("\tSegment without metadata!\n");
+                }
+
+                infile.seekg(dataPos, std::ios_base::beg);
+                metaData->readRawData(verbose);
 
                 if (verbose)
-                    printf("\tSegment without metadata!\n");
-
-                total_chunk_size = nextSegmentOffset - offset;
-                infile.seekg(posAfterLeadIn + offset, std::ios_base::beg);
-                metaData->readRawData(verbose);
+                {
+                    printf("POS after raw data: %llu\n", (unsigned long long)infile.tellg());
+                }
             }
             else if (verbose)
             {
@@ -111,15 +114,7 @@ void TDMSReader::read(const std::string &filename,
 
             data->storeObjects(metaData);
 
-            if (atEnd)
-                printf("Should skip to the end of file...File format error?!\n");
-
-            if (nextSegmentOffset >= file_size)
-            {
-                if (verbose)
-                    printf("\tEnd of file is reached after segment !\n");
-                break;
-            }
+            infile.seekg(nextSegmentPos, std::ios_base::beg);
         }
         catch (EOFError &)
         {
@@ -127,8 +122,13 @@ void TDMSReader::read(const std::string &filename,
         }
         catch (Error &error)
         {
-            std::cout << "caught an Error\n"
+            std::cout << "Caught an Error: "
                       << error.message << std::endl;
         }
     };
+
+    if (verbose)
+    {
+        printf("\tEnd of file is reached!\n");
+    }
 }

@@ -49,13 +49,13 @@ int main(int argc, char **argv)
     tdms_data.print(std::cout);
     std::cout << std::endl;
 
-    // Example of retrieving value for Acceleration x at index 1
-    const unsigned int index = 1;
-    std::string group_name = "/'RT3000 UDP'";
-    std::string channel_name = "'Acceleration x [m/(s^2)]'";
+    // // Example of retrieving value for Acceleration x at index 1
+    // const unsigned int index = 1;
+    // std::string group_name = "/'RT3000 UDP'";
+    // std::string channel_name = "'Acceleration x [m/(s^2)]'";
 
-    const double acceleration = tdms_data.getDataFloat64(group_name, channel_name, index);
-    std::cout << "Acceleration x [m/(s^2)] [" << index << "]: " << acceleration << std::endl;
+    // const double acceleration = tdms_data.getDataFloat64(group_name, channel_name, index);
+    // std::cout << "Acceleration x [m/(s^2)] [" << index << "]: " << acceleration << std::endl;
 
     return 0;
 }

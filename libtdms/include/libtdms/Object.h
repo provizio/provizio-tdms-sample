@@ -1,5 +1,5 @@
-#ifndef OBJECT_H
-#define OBJECT_H
+#ifndef LIBTDMS_OBJECT
+#define LIBTDMS_OBJECT
 
 #include <string>
 #include <fstream>
@@ -36,14 +36,13 @@ private:
     std::ifstream &infile;
     std::string path;
     std::map<std::string, std::string> properties;
-    unsigned int rawDataIndex;
-    bool flagHasRawData;
-    unsigned int propertyCount;
-    const DataType *dataType;
-    int dimension;
-    long long nvalue;
-    long long nbytes;
+    bool flagHasRawData = false;
+    unsigned int propertyCount = 0;
+    const DataType *dataType = 0;
+    int dimension = 0;
+    long long nvalue = 0;
+    long long nbytes = 0;
     std::shared_ptr<DataArray> rawData;
 };
 
-#endif
+#endif // LIBTDMS_OBJECT

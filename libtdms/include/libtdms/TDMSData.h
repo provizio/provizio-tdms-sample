@@ -18,9 +18,6 @@ public:
     std::shared_ptr<Group> getGroup(const std::string &);
     const Root &getRoot() const;
     void print(std::ostream &os) const;
-    // define here a function to extract each specific type of data
-    // this is an example to extract a value of OxTS Acceleration (Float64)
-    double getDataFloat64(const std::string &group_name, const std::string &channel_name, const unsigned int index);
 
 private:
     const std::string filename;

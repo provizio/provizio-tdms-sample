@@ -94,22 +94,3 @@ const Root &TDMSData::getRoot() const
 {
     return root;
 }
-
-double TDMSData::getDataFloat64(const std::string &group_name, const std::string &channel_name, const unsigned int index)
-{
-    double value;
-    // find group
-    auto group = root.getGroup(group_name);
-    // find channel
-    auto channel = group->getChannel(channel_name);
-    // get data from channel
-    auto data = channel->getData();
-    const DataType *dataType = channel->getDataType();
-    int nbytes = data->getSizeOf();
-    int nelements = data->getSize();
-    // extract data of specific type at input position "index"
-    char *ptr = (char *)data->getData()->data();
-    ptr += nbytes * index;
-    std::memcpy(&value, ptr, nbytes);
-    return value;
-}
