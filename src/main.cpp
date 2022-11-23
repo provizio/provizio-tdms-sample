@@ -8,6 +8,7 @@
 #include "libtdms/TDMSData.h"
 #include "provizio/radar_api/core.h"
 #include "WGS84toCartesian.hpp"
+#include "linmath/linmath.h"
 
 void help()
 {
@@ -18,10 +19,26 @@ void help()
               << std::endl;
 }
 
+struct Extrinsics
+{
+    float position_x_meters; // Forward
+    float position_y_meters; // Left
+    float position_z_meters; // Up
+    float roll_radians;
+    float pitch_radians;
+    float yaw_radians;
+};
+
 class ProvizioTDMSData : public TDMSData
 {
 public:
-    ProvizioTDMSData(const std::string &oxtsGroupName, const std::string &provizioGroupName, std::size_t maxAccumulationFrames, std::ostream &pointclouds_csv_stream, std::ostream &accumulated_pointclouds_csv_stream);
+    ProvizioTDMSData(
+        const std::string &oxtsGroupName,
+        const std::string &provizioGroupName,
+        std::size_t maxAccumulationFrames,
+        const Extrinsics &radarExtrinsicsRelativeToOxTS,
+        std::ostream &pointclouds_csv_stream,
+        std::ostream &accumulated_pointclouds_csv_stream);
 
 protected:
     void addObject(std::shared_ptr<Group> group, std::shared_ptr<Channel> channel, std::shared_ptr<Object> object) override;
@@ -36,6 +53,7 @@ private:
 
     const std::string oxtsGroupName;
     const std::string provizioGroupName;
+    const Extrinsics radarExtrinsicsRelativeToOxTS;
 
     std::ostream &pointclouds_csv_stream;
     std::ostream &accumulated_pointclouds_csv_stream;
@@ -57,9 +75,16 @@ private:
     provizio_enu_fix latestFix = {{nan, nan, nan, nan}, {nan, nan, nan}};
 };
 
-ProvizioTDMSData::ProvizioTDMSData(const std::string &oxtsGroupName, const std::string &provizioGroupName, std::size_t maxAccumulationFrames, std::ostream &pointclouds_csv_stream, std::ostream &accumulated_pointclouds_csv_stream)
+ProvizioTDMSData::ProvizioTDMSData(
+    const std::string &oxtsGroupName,
+    const std::string &provizioGroupName,
+    std::size_t maxAccumulationFrames,
+    const Extrinsics &radarExtrinsicsRelativeToOxTS,
+    std::ostream &pointclouds_csv_stream,
+    std::ostream &accumulated_pointclouds_csv_stream)
     : oxtsGroupName(oxtsGroupName),
       provizioGroupName(provizioGroupName),
+      radarExtrinsicsRelativeToOxTS(radarExtrinsicsRelativeToOxTS),
       pointclouds_csv_stream(pointclouds_csv_stream),
       accumulated_pointclouds_csv_stream(accumulated_pointclouds_csv_stream),
       point_cloud_api_context(std::make_unique<provizio_radar_point_cloud_api_context>()),
@@ -137,10 +162,21 @@ void ProvizioTDMSData::addOxtsObject(std::shared_ptr<Channel> channel, std::shar
     if (updateLatestFix && !std::isnan(lat) && !std::isnan(lon) && !std::isnan(alt) && !std::isnan(yaw) && !std::isnan(pitch) && !std::isnan(roll))
     {
         const auto en = wgs84::toCartesian({refLat, refLon}, {lat, lon});
-        latestFix.position.east_meters = en[0];
-        latestFix.position.north_meters = en[1];
-        latestFix.position.up_meters = alt;
-        provizio_quaternion_set_euler_angles(roll, pitch, yaw, &latestFix.orientation);
+        const float oxts_x = en[0];
+        const float oxts_y = en[1];
+        const float oxts_z = alt;
+
+        provizio_quaternion quaternion;
+        provizio_quaternion_set_euler_angles(roll, pitch, yaw, &quaternion);
+        quat q = {quaternion.x, quaternion.y, quaternion.z, quaternion.w};
+        vec3 extrinsicsPosVehicle = {radarExtrinsicsRelativeToOxTS.position_x_meters, radarExtrinsicsRelativeToOxTS.position_y_meters, radarExtrinsicsRelativeToOxTS.position_z_meters};
+        vec3 extrinsicsPosEnu;
+        quat_mul_vec3(extrinsicsPosEnu, q, extrinsicsPosVehicle);
+
+        latestFix.position.east_meters = oxts_x + extrinsicsPosEnu[0];
+        latestFix.position.north_meters = en[1] + extrinsicsPosEnu[1];
+        latestFix.position.up_meters = alt + extrinsicsPosEnu[2];
+        provizio_quaternion_set_euler_angles(roll + radarExtrinsicsRelativeToOxTS.roll_radians, pitch + radarExtrinsicsRelativeToOxTS.pitch_radians, yaw + radarExtrinsicsRelativeToOxTS.yaw_radians, &latestFix.orientation);
 
         // So next time we update latestFix when all 6 values are received again
         lat = lon = alt = yaw = pitch = roll = nan;
@@ -230,13 +266,18 @@ int main(int argc, char **argv)
     const bool verbose = (argc == 3 && strcmp(argv[1], "-v") == 0);
     const std::string file_name = (argc == 3) ? argv[2] : argv[1];
 
-    std::fstream pointclouds_csv_stream{file_name + ".pointclouds.csv", std::ios_base::out};
-    std::fstream accumulated_pointclouds_csv_stream{file_name + ".accumulated_pointclouds.csv", std::ios_base::out};
+    const auto pointcloudsFile = file_name + ".pointclouds.csv";
+    const auto accumulatedPointcloudsFile = file_name + ".accumulated_pointclouds.csv";
+    std::fstream pointclouds_csv_stream{pointcloudsFile, std::ios_base::out};
+    std::fstream accumulated_pointclouds_csv_stream{accumulatedPointcloudsFile, std::ios_base::out};
 
     // Parse TDMS
     const std::size_t maxAccumulationFrames = 100;
-    ProvizioTDMSData tdms_data("/'RT3000 UDP'", "/'Provizio'", maxAccumulationFrames, pointclouds_csv_stream, accumulated_pointclouds_csv_stream);
+    const Extrinsics radarExtrinsicsRelativeToOxTS = {0, 0, 0, 0, 0, 0}; // TODO: to be either parsed from a config or specified as an input argument - will be discussed with JLR later
+    ProvizioTDMSData tdms_data("/'RT3000 UDP'", "/'Provizio'", maxAccumulationFrames, radarExtrinsicsRelativeToOxTS, pointclouds_csv_stream, accumulated_pointclouds_csv_stream);
     tdms_data.read(file_name, verbose);
+
+    std::cout << "Results have been written to " << pointcloudsFile << " and " << accumulatedPointcloudsFile << std::endl;
 
     return 0;
 }
