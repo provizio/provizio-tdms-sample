@@ -1,21 +1,19 @@
-#ifndef TDMS_READER_H
-#define TDMS_READER_H
+#ifndef LIBTDMS_TDMSREADER
+#define LIBTDMS_TDMSREADER
 
-class ObjectDefaults;
+#include <memory>
+
+#include "ObjectDefaults.h"
+
 class MetaData;
 class TDMSData;
 
 class TDMSReader {
 public:
-    TDMSReader();
-    ~TDMSReader();
-    void checkSizeOfTypes();
     void read(const std::string &filename, TDMSData*, const bool verbose=true);
 private:
-    ObjectDefaults* objectDefaults;
-    MetaData* metaData;
-    unsigned long long file_size;
-    bool atEnd;
+    std::shared_ptr<ObjectDefaults> objectDefaults;
+    std::shared_ptr<MetaData> metaData;
 };
 
-#endif
+#endif // LIBTDMS_TDMSREADER

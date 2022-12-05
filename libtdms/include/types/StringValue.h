@@ -1,5 +1,5 @@
-#ifndef STRINGVALUE_H_
-#define STRINGVALUE_H_
+#ifndef TYPES_STRINGVALUE
+#define TYPES_STRINGVALUE
 
 #include "types/DataValue.h"
 
@@ -9,4 +9,4 @@ public:
   const std::string data;
 };
 
-#endif
+#endif // TYPES_STRINGVALUE

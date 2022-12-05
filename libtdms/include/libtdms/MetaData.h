@@ -1,25 +1,28 @@
-#ifndef META_DATA_H
-#define META_DATA_H
+#ifndef LIBTDMS_METADATA
+#define LIBTDMS_METADATA
 
 #include <fstream>
-#include <list>
+#include <vector>
+#include <memory>
 
-class ObjectDefaults;
-class Object;
+#include "ObjectDefaults.h"
+#include "Object.h"
 
-class MetaData {
+class MetaData
+{
 public:
-    typedef std::list<Object*> ObjectList;
-    MetaData(std::ifstream &infile, ObjectDefaults* objectDefaults);
+    typedef std::vector<std::shared_ptr<Object>> ObjectList;
+    MetaData(std::ifstream &infile, std::shared_ptr<ObjectDefaults> objectDefaults);
     void readObjectCount();
     void readRawData(const bool verbose);
     void print() const;
-    const ObjectList& getObjectList() const;
+    const ObjectList &getObjectList() const;
+
 private:
-    std::ifstream& infile;
-    ObjectDefaults *objectDefaults;
+    std::ifstream &infile;
+    std::shared_ptr<ObjectDefaults> objectDefaults;
     unsigned int objectCount;
     ObjectList objects;
 };
 
-#endif
+#endif // LIBTDMS_METADATA

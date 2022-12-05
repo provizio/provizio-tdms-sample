@@ -5,7 +5,6 @@
 
 class UInt8Array : public DataArray {
 public:
-  UInt8Array(const DataType* type, unsigned char* data, unsigned int size);
-  unsigned char* data;
+  UInt8Array(const DataType* type, std::shared_ptr<std::vector<std::uint8_t>> data, unsigned int size);
 };
 #endif

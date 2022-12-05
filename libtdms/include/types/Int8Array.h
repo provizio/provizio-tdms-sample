@@ -3,10 +3,10 @@
 
 #include "types/DataArray.h"
 
-class Int8Array : public DataArray {
+class Int8Array : public DataArray
+{
 public:
-  Int8Array(const DataType* type, char* data, unsigned int size);
-  char* data;
+  Int8Array(const DataType *type, std::shared_ptr<std::vector<std::uint8_t>> data, unsigned int size);
 };
 
 #endif

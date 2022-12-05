@@ -5,8 +5,7 @@
 
 class BoolArray : public DataArray {
 public:
-  BoolArray(const DataType* type, bool* data, unsigned int size);
-  bool* data;
+  BoolArray(const DataType* type, std::shared_ptr<std::vector<std::uint8_t>> data, unsigned int size);
 };
 
 #endif

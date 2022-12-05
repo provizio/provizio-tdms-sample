@@ -3,7 +3,7 @@
 
 #include <string>
 
-class DataType;
+#include "types/DataType.h"
 
 class DataValue {
 public:

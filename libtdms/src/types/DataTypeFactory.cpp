@@ -14,29 +14,32 @@
 #include "types/String.h"
 #include "types/Bool.h"
 
-std::map<int, const DataType*> DataTypeFactory::singletonObjects;
+std::map<int, std::shared_ptr<DataType>> DataTypeFactory::singletonObjects;
 
-const DataType* DataTypeFactory::instanceFromIndex(unsigned int itype) {
-  if (singletonObjects.size() == 0) {
-    //std::cout << "initializing objects" << std::endl;
-    singletonObjects[INT8] = new Int8();
-    singletonObjects[INT16] = new Int16();
-    singletonObjects[INT32] = new Int32();
-    singletonObjects[INT64] = new Int64();
-    singletonObjects[UINT8] = new UInt8();
-    singletonObjects[UINT16] = new UInt16();
-    singletonObjects[UINT32] = new UInt32();
-    singletonObjects[UINT64] = new UInt64();
-    singletonObjects[FLOAT32] = new Float32();
-    singletonObjects[FLOAT64] = new Float64();
-    singletonObjects[FLOAT128] = new Float128();
-    singletonObjects[STRING] = new String();
-    singletonObjects[BOOL] = new Bool();
+const DataType *DataTypeFactory::instanceFromIndex(unsigned int itype)
+{
+  if (singletonObjects.size() == 0)
+  {
+    // std::cout << "initializing objects" << std::endl;
+    singletonObjects[INT8] = std::make_shared<Int8>();
+    singletonObjects[INT16] = std::make_shared<Int16>();
+    singletonObjects[INT32] = std::make_shared<Int32>();
+    singletonObjects[INT64] = std::make_shared<Int64>();
+    singletonObjects[UINT8] = std::make_shared<UInt8>();
+    singletonObjects[UINT16] = std::make_shared<UInt16>();
+    singletonObjects[UINT32] = std::make_shared<UInt32>();
+    singletonObjects[UINT64] = std::make_shared<UInt64>();
+    singletonObjects[FLOAT32] = std::make_shared<Float32>();
+    singletonObjects[FLOAT64] = std::make_shared<Float64>();
+    singletonObjects[FLOAT128] = std::make_shared<Float128>();
+    singletonObjects[STRING] = std::make_shared<String>();
+    singletonObjects[BOOL] = std::make_shared<Bool>();
   }
-  if (singletonObjects.count(itype)==0) {
+  if (singletonObjects.count(itype) == 0)
+  {
     throw IOError("Unimplented data type");
   }
-  return singletonObjects[itype];
+  return singletonObjects[itype].get();
 }
 
 const int DataTypeFactory::INT8 = 1;
@@ -52,4 +55,3 @@ const int DataTypeFactory::FLOAT64 = 10;
 const int DataTypeFactory::FLOAT128 = 11;
 const int DataTypeFactory::STRING = 32;
 const int DataTypeFactory::BOOL = 33;
-

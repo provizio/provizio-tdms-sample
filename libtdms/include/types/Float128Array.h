@@ -3,10 +3,10 @@
 
 #include "types/DataArray.h"
 
-class Float128Array : public DataArray {
+class Float128Array : public DataArray
+{
 public:
-  Float128Array(const DataType* type, long double* data, unsigned int size);
-  long double* data;
+  Float128Array(const DataType *type, std::shared_ptr<std::vector<std::uint8_t>> data, unsigned int size);
 };
 
 #endif

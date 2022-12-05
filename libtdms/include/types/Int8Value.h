@@ -2,7 +2,7 @@
 #define INT8VALUE_H_
 
 #include "types/DataValue.h"
-class DataType;
+#include "types/DataType.h"
 
 class Int8Value : public DataValue {
 public:

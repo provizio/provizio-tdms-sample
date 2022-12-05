@@ -8,114 +8,127 @@
 #include "libtdms/Error.h"
 #include "libtdms/TDMSData.h"
 
-TDMSReader::TDMSReader()
-    :   objectDefaults(0) {
-}
+// Only these sizes are supported by libtdms
+static_assert(sizeof(char) == 1, "sizeof(char) == 1 expected");
+static_assert(sizeof(short) == 2, "sizeof(short) == 2 expected");
+static_assert(sizeof(int) == 4, "sizeof(int) == 4 expected");
+static_assert(sizeof(long long) == 8, "sizeof(long long) == 8 expected");
+static_assert(sizeof(float) == 4, "sizeof(float) == 4 expected");
+static_assert(sizeof(double) == 8, "sizeof(double) == 8 expected");
+static_assert(sizeof(long double) == 16, "sizeof(long double) == 16 expected");
+static_assert(sizeof(bool) == 1, "sizeof(bool) == 1 expected");
 
-void TDMSReader::checkSizeOfTypes() {
-    std::cout << "\nsize of char should be 1: " << sizeof(char) << std::endl;
-    std::cout << "size of short should be 2: " << sizeof(short) << std::endl;
-    std::cout << "size of int should be 4: " << sizeof(int) << std::endl;
-    std::cout << "size of long should be 4: " << sizeof(long) << std::endl;
-    std::cout << "size of long long should be 8: " << sizeof(long long)
-                    << std::endl;
-    std::cout << "size of float should be 4: " << sizeof(float) << std::endl;
-    std::cout << "size of double should be 8: " << sizeof(double) << std::endl;
-    std::cout << "size of long double should be 16: " << sizeof(long double)
-                    << std::endl;
-    std::cout << "size of bool should be 1: " << sizeof(bool) << std::endl;
-}
-
-TDMSReader::~TDMSReader() {
-    delete objectDefaults;
-}
-
-void TDMSReader::read(const std::string &filename, 
-        TDMSData* data, const bool verbose) {
-    if (objectDefaults) delete objectDefaults;
-    objectDefaults = new ObjectDefaults();
+void TDMSReader::read(const std::string &filename,
+                      TDMSData *data, const bool verbose)
+{
+    objectDefaults = std::make_shared<ObjectDefaults>();
     std::ifstream infile(filename.c_str(), std::ios::binary | std::ios::in);
 
     // Find total file size
-	infile.seekg(0, std::ios::end);
-	file_size = infile.tellg();
-	infile.seekg(0, std::ios::beg);
+    infile.seekg(0, std::ios::end);
+    const auto file_size = infile.tellg();
+    infile.seekg(0, std::ios::beg);
 
     metaData = 0;
-    atEnd = false;
 
-    while (infile.tellg() < (long long)file_size) {
-        
-        LeadIn *leadIn = 0;
-        try {
-            leadIn = new LeadIn(infile);
-        } catch (EOFError&) {
-            break;
-        } catch (Error& error) {
-            std::cout << "caught an Error\n" << error.message << std::endl;
-        }
+    while (!infile.eof())
+    {
+        try
+        {
+            LeadIn leadIn(infile);
 
-        if (infile.eof()) break;
-            
-        if ((verbose)) {
-            leadIn->print();
-        }
+            if (infile.eof())
+            {
+                break;
+            }
 
-        unsigned long long posAfterLeadIn = (unsigned long long)infile.tellg();
-        long long nextSegmentOffset = leadIn->getNextSegmentOffset();
+            if ((verbose))
+            {
+                leadIn.print();
+            }
 
-        if (nextSegmentOffset == -1)
-            nextSegmentOffset = file_size;
+            const auto posAfterLeadIn = infile.tellg();
+            std::streampos nextSegmentPos;
 
-        atEnd = (nextSegmentOffset >= (long long)file_size);
-        long long nextOffset = (atEnd) ? file_size : nextSegmentOffset + (long long)infile.tellg();
-        
-        if (verbose){
-            printf("POS after LeadIn: %llu\n", posAfterLeadIn);
-            printf("Next Offset: %llu (0x%X)\n", (unsigned long long)nextOffset, (unsigned int)nextOffset);
-        }
+            if (leadIn.getNextSegmentOffset() == -1)
+            {
+                nextSegmentPos = file_size;
+            }
+            else
+            {
+                nextSegmentPos = posAfterLeadIn + (std::streamoff)leadIn.getNextSegmentOffset();
+            }
 
-        unsigned long long offset = leadIn->getDataOffset(), total_chunk_size = 0;
+            const auto dataPos = posAfterLeadIn + (std::streamoff)leadIn.getDataOffset();
 
-        if (leadIn->hasMetaData()) {
-            metaData = new MetaData(infile, objectDefaults);
-            if (verbose) metaData->print();
+            if (verbose)
+            {
+                printf("POS after LeadIn: %llu\n", (unsigned long long)posAfterLeadIn);
+                printf("Data POS: %llu\n", (unsigned long long)dataPos);
+                printf("Next Segment POS: %llu\n", (unsigned long long)nextSegmentPos);
+            }
 
-            if (leadIn->hasRawData()){
-                infile.seekg(posAfterLeadIn + offset, std::ios_base::beg);
+            if (leadIn.hasMetaData())
+            {
+                metaData = std::make_shared<MetaData>(infile, objectDefaults);
                 if (verbose)
-                    printf("Raw data starts at POS: %llu (0x%X)\n", (unsigned long long)infile.tellg(), (unsigned int)infile.tellg());
+                {
+                    metaData->print();
+                }
 
+                if (leadIn.hasRawData())
+                {
+                    infile.seekg(dataPos, std::ios_base::beg);
+                    if (verbose)
+                    {
+                        printf("Raw data starts at POS: %llu\n", (unsigned long long)infile.tellg());
+                    }
+
+                    metaData->readRawData(verbose);
+
+                    if (verbose)
+                    {
+                        printf("POS after raw data: %llu\n", (unsigned long long)infile.tellg());
+                    }
+                }
+            }
+            else if (leadIn.hasRawData())
+            {
+                if (verbose)
+                {
+                    printf("\tSegment without metadata!\n");
+                }
+
+                infile.seekg(dataPos, std::ios_base::beg);
                 metaData->readRawData(verbose);
 
                 if (verbose)
-                    printf("POS after raw data: %llu (0x%X)\n", (unsigned long long)infile.tellg(), (unsigned int)infile.tellg());
+                {
+                    printf("POS after raw data: %llu\n", (unsigned long long)infile.tellg());
+                }
+            }
+            else if (verbose)
+            {
+                printf("\tSegment without metadata or raw data!\n");
             }
 
-        } else if (leadIn->hasRawData()) {
+            data->storeObjects(metaData);
 
-            if (verbose)
-                printf("\tSegment without metadata!\n");
-
-            total_chunk_size = nextSegmentOffset - offset;
-            infile.seekg(posAfterLeadIn + offset, std::ios_base::beg);
-            metaData->readRawData(verbose);
-
-        } else if (verbose) {
-            printf("\tSegment without metadata or raw data!\n");
+            infile.seekg(nextSegmentPos, std::ios_base::beg);
         }
-
-        data->storeObjects(metaData);
-
-        if (atEnd)
-            printf("Should skip to the end of file...File format error?!\n");
-
-        if (nextSegmentOffset >= file_size){
-            if (verbose)
-                printf("\tEnd of file is reached after segment !\n");
+        catch (EOFError &)
+        {
             break;
         }
-
+        catch (Error &error)
+        {
+            std::cout << "Caught an Error: "
+                      << error.message << std::endl;
+        }
     };
-    delete metaData;
+
+    if (verbose)
+    {
+        printf("\tEnd of file is reached!\n");
+    }
 }
