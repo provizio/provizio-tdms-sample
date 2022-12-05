@@ -49,7 +49,7 @@ set(LINMATH_DOWNLOAD_URL
 file(DOWNLOAD "${LINMATH_DOWNLOAD_URL}" "${LINMATH_HEADER_DIR}/${LINMATH_HEADER_NAME}")
 
 # Create target executable
-add_executable(provizio-tdms-sample src/main.cpp)
+add_executable(provizio-tdms-sample src/ProvizioTDMSData.cpp src/main.cpp)
 target_include_directories(provizio-tdms-sample PUBLIC ${PROJECT_BINARY_DIR} include)
 target_link_libraries(provizio-tdms-sample PUBLIC libtdms)
 
